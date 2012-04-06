@@ -34,9 +34,9 @@ public class KMeans {
 	
 	private static List <CustomerVector>customerList = new ArrayList<CustomerVector>();
 	private static int NUMBER_OF_CLUSTERS=5;
-	private static String INPUT_FILE_NAME="C:\\kMeansTestFile.csv";
-	private static String OUTPUT_FILE_NAME="C:\\kMeansOutFile.csv";
-	private static String CLUSTER_FILE_NAME="C:\\kMeansClusterFile.csv";
+	private static String INPUT_FILE_NAME="kMeansTestFile.csv";
+	private static String OUTPUT_FILE_NAME="kMeansOutFile.csv";
+	private static String CLUSTER_FILE_NAME="kMeansClusterFile.csv";
 	private static final double BETA=1.5;
 	private static int numOfRecordsRead=0;
 	private DistanceMeasure distanceMeasure;
