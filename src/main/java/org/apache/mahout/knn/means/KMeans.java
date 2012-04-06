@@ -33,24 +33,28 @@ import com.google.common.collect.Lists;
 public class KMeans { 
 	
 	private static List <CustomerVector>customerList = new ArrayList<CustomerVector>();
-	private static int NUMBER_OF_CLUSTERS=5;
-	private static String INPUT_FILE_NAME="kMeansTestFile.csv";
-	private static String OUTPUT_FILE_NAME="kMeansOutFile.csv";
-	private static String CLUSTER_FILE_NAME="kMeansClusterFile.csv";
-	private static final double BETA=1.5;
-	private static int numOfRecordsRead=0;
+	private static int NUMBER_OF_CLUSTERS = 5;
+	private static String INPUT_FILE_NAME = "kMeansTestFile.csv";
+	private static String OUTPUT_FILE_NAME = "kMeansOutFile.csv";
+	private static String CLUSTER_FILE_NAME = "kMeansClusterFile.csv";
+	private static final double BETA = 1.5;
+	private static int numOfRecordsRead = 0;
 	private DistanceMeasure distanceMeasure;
     private static Matrix customerMatrix;
     private double distanceCutoff;
     private static Searcher clusters;
-
-
+    	
+    /**
+     * 
+     * @param fileName
+     * @throws Exception
+     */
 	private final void createTestFile (String fileName) throws Exception {
 	   	File dataFile = new File(fileName);
-    	FileWriter fileWriter=new FileWriter(dataFile);
-    	StringBuilder stringBuilder=new StringBuilder();
+    	FileWriter fileWriter = new FileWriter(dataFile);
+    	StringBuilder stringBuilder = new StringBuilder();
         final Random gen = new Random();
-    	for(int i =0; i<100;i++) {
+    	for(int i = 0; i < 100; i++) {
     		stringBuilder.append(i).append(",");
     		for (int j=0; j <10; j++) {
     			stringBuilder.append(gen.nextGaussian()).append(",");
@@ -60,50 +64,58 @@ public class KMeans {
     		stringBuilder.setLength(0);
     	}
     	fileWriter.close();
- 		
 	}
-	
+	/**
+	 * 
+	 * @param fileName
+	 * @throws Exception
+	 */
 	private final void readInputFile(String fileName) throws Exception{
-    	FileReader fileReader=new FileReader(new File(fileName));
-    	BufferedReader bufferedReader=new BufferedReader(fileReader);
-    	String line=null;
+    	FileReader fileReader = new FileReader(new File(fileName));
+    	BufferedReader bufferedReader = new BufferedReader(fileReader);
+    	String line = null;
      	String [] values;
-    	double [] doubleValues=null;
+    	double [] doubleValues = null;
     	
-     	while ((line=bufferedReader.readLine()) != null) {
+     	while ((line = bufferedReader.readLine()) != null) {
      		values=line.split(",");
         	doubleValues=new double[values.length-1];
-	     	for (int i=0; i < doubleValues.length; i++) {
+	     	for (int i = 0; i < doubleValues.length; i++) {
 	     		doubleValues[i]=Double.parseDouble(values[i+1]);
 	     	}
 	 		customerList.add(new CustomerVector(values[0],new DenseVector(doubleValues)));
-	 		
 	 		numOfRecordsRead++;
      	}
-     	
        	customerMatrix=new DenseMatrix(numOfRecordsRead, doubleValues.length);
-     	
-     	for (int i=0; i < numOfRecordsRead; i++) {
+     	for (int i = 0; i < numOfRecordsRead; i++) {
      		customerMatrix.viewRow(i).assign(customerList.get(i));
      	}
-     		
-     	
     	fileReader.close();
 	}
 	
-	
+	/**
+	 * 
+	 * @param distanceMeasure
+	 * @param data
+	 * @param maxClusters
+	 * @return
+	 */
     public Searcher cluster(DistanceMeasure distanceMeasure, Iterable<MatrixSlice> data, int maxClusters) {
         // initialize scale
         distanceCutoff = estimateCutoff(data);
         this.distanceMeasure = distanceMeasure;
 
         // cluster the data
-        return clusterInternal(data, maxClusters, 1);
-        
-        
+        return clusterInternal(data, maxClusters, 1); 
     }
     
-
+    /**
+     * 
+     * @param data
+     * @param maxClusters
+     * @param depth
+     * @return
+     */
     private UpdatableSearcher clusterInternal(Iterable<MatrixSlice> data, int maxClusters, int depth) {
         int width = data.iterator().next().vector().size();
         UpdatableSearcher centroids = new ProjectionSearch(width, distanceMeasure, 4, 10);
@@ -142,7 +154,7 @@ public class KMeans {
                 // excessive size leading sub-clustering to collapse the centroids set too much.
                 // This test prevents that collapse from getting too severe.
                 if (centroids.size() > 0.1 * maxClusters) {
-                    distanceCutoff *= 1.5;
+                    distanceCutoff *= BETA;
                 }
             }
             n++;
@@ -150,7 +162,11 @@ public class KMeans {
         return centroids;
     }
     
-
+    /**
+     * 
+     * @param data
+     * @return
+     */
     public double estimateCutoff(Iterable<MatrixSlice> data) {
         Iterable<MatrixSlice> top = Iterables.limit(data, 100);
 
@@ -167,7 +183,10 @@ public class KMeans {
         }
         return distanceCutoff;
     }
-
+    /**
+     * 
+     * @throws Exception
+     */
 	private final void setClusters() throws Exception{
 		Vector vector;
     	for (CustomerVector customerVector : customerList) {
@@ -181,15 +200,14 @@ public class KMeans {
             }
         }); 
     	
-    	FileWriter fileWriter=new FileWriter(new File(OUTPUT_FILE_NAME));
+    	FileWriter fileWriter = new FileWriter(new File(OUTPUT_FILE_NAME));
     	StringBuilder stringBuilder = new StringBuilder();
     	for (CustomerVector customerVector : customerList) {
-    		vector=customerVector.getVector();
+    		vector = customerVector.getVector();
 			stringBuilder.append(customerVector.getClusterKey()).append(",").append(customerVector.getCustomerKey()).append(",").append(customerVector.getPerformance()).append(",");
-			int vectorSize=vector.size();
+			int vectorSize = vector.size();
 			for (int j=0; j < vectorSize; j++) {
 				stringBuilder.append(String.valueOf(vector.get(j))).append(",");
-				
 			}
 			stringBuilder.setCharAt(stringBuilder.length()-1,'\n');
 			fileWriter.write(stringBuilder.toString());
@@ -198,7 +216,10 @@ public class KMeans {
     	fileWriter.close();	
 	}
 
-
+	/**
+	 * 
+	 * @throws Exception
+	 */
 	private final void writeClusters() throws Exception{
 	   	File dataFile = new File(CLUSTER_FILE_NAME);
     	FileWriter fileWriter=new FileWriter(dataFile);
@@ -218,11 +239,15 @@ public class KMeans {
     	}
     	fileWriter.close();	
 	}
-
 	
+	/**
+	 * 
+	 * @param args
+	 * @throws Exception
+	 */
 	public final static void main(String[] args) throws Exception { 
     	
-    	KMeans kMeans=new KMeans();
+    	KMeans kMeans = new KMeans();
     	
     	if (args.length == 0) {
     		kMeans.createTestFile(INPUT_FILE_NAME);
@@ -245,17 +270,13 @@ public class KMeans {
     		CLUSTER_FILE_NAME=args[3];
     	}
     	
-    	clusters =kMeans.cluster(new SquaredEuclideanDistanceMeasure(), customerMatrix, NUMBER_OF_CLUSTERS);
+    	clusters = kMeans.cluster(new SquaredEuclideanDistanceMeasure(), customerMatrix, NUMBER_OF_CLUSTERS);
     	kMeans.setClusters();
     	kMeans.writeClusters();
 
     	Iterator<MatrixSlice> clusterIterator = clusters.iterator();
     	while (clusterIterator.hasNext()) {
     		System.out.println(clusterIterator.next().vector().toString());
-    		}
-    	
+    	}	
     }
-
-
-
 }
